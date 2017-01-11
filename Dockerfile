@@ -6,15 +6,22 @@ ENV TERM=xterm
 RUN apt-get update
 
 # install flask
+RUN pip install --upgrade pip
 ADD requirements.txt .
 RUN /usr/local/bin/pip install -r ./requirements.txt
+ADD app.py .
+ADD server_config ./server_config/
+ADD data ./data/
+ADD lib	./lib/
+ADD static ./static/
+ADD templates ./templates/
+ADD docker-entrypoint.sh .
 
-# a couple of mount points to link volumes
-RUN mkdir /php-apps
-RUN mkdir /python-apps
-RUN mkdir /sql
-RUN mkdir /backups
 # check python version
 RUN which python
 RUN python --version
 RUN pip freeze
+
+ENTRYPOINT ["./docker-entrypoint.sh"]
+RUN chmod 755 ./docker-entrypoint.sh
+
