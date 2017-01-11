@@ -16,6 +16,13 @@ $ flask/bin/pip install -r requirements.txt
 
 Now you can run application by command `./app.py`
 
+Running locally built container
 
-
+```
+[root@ip-172-30-0-153 flask-file-uploader]# docker run --rm -it fup /bin/bash
+ * Running on http://127.0.0.1:9191/ (Press CTRL+C to quit)
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger pin code: 289-535-189
+```
 
