@@ -2,7 +2,7 @@ FROM fogcitymarathoner/dockerfile-php5.6.22-python2.7.11
 
 ENV PYTHONUNBUFFERED 1
 ENV TERM=xterm
-EXPOSE 9191
+EXPOSE 9193
 
 RUN apt-get update
 
