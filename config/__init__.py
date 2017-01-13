@@ -19,6 +19,15 @@ if os.environ.get('AWS_BUCKET'):
 else:
     print('Environment Variable AWS_BUCKET not set')
     quit(1)
+
+
+if os.environ.get('FUP_PORT'):
+    FUP_PORT = os.environ.get('FUP_PORT')
+else:
+    print('Environment Variable FUP_PORT not set')
+    quit(1)
+
+
 UPLOAD_FOLDER = 'data/'
 THUMBNAIL_FOLDER = 'data/thumbnail/'
 MAX_CONTENT_LENGTH = 50 * 1024 * 1024

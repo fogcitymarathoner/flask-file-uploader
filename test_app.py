@@ -17,6 +17,7 @@ class FlaskTestCase(unittest.TestCase):
         assert 'AWS_ACCESS_KEY_ID' in app.config.keys()
         assert 'AWS_SECRET_ACCESS_KEY' in app.config.keys()
         assert 'AWS_BUCKET' in app.config.keys()
+        assert 'FUP_PORT' in app.config.keys()
         assert 'UPLOAD_FOLDER' in app.config.keys()
         assert 'THUMBNAIL_FOLDER' in app.config.keys()
         assert 'MAX_CONTENT_LENGTH' in app.config.keys()
