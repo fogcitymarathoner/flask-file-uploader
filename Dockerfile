@@ -11,6 +11,7 @@ RUN pip install --upgrade pip
 ADD requirements.txt .
 RUN /usr/local/bin/pip install -r ./requirements.txt
 ADD app.py .
+ADD config ./config/
 ADD server_config ./server_config/
 ADD data ./data/
 ADD lib	./lib/
