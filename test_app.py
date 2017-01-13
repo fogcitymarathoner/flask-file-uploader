@@ -8,14 +8,18 @@ class FlaskTestCase(unittest.TestCase):
 
     def setUp(self):
         self.app = app.test_client()
-        self.app.config.from_object('config')
 
     def tearDown(self):
         pass
 
     def test_app_config_aws(self):
-        print(self.app.config)
-        assert 1 == 2
+        assert 'hi' == app.config['DUMB']
+        assert 'AWS_ACCESS_KEY_ID' in app.config.keys()
+        assert 'AWS_SECRET_ACCESS_KEY' in app.config.keys()
+        assert 'AWS_BUCKET' in app.config.keys()
+        assert 'UPLOAD_FOLDER' in app.config.keys()
+        assert 'THUMBNAIL_FOLDER' in app.config.keys()
+        assert 'MAX_CONTENT_LENGTH' in app.config.keys()
 
 if __name__ == '__main__':
     unittest.main()
