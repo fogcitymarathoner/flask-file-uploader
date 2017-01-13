@@ -24,6 +24,5 @@ RUN which python
 RUN python --version
 RUN pip freeze
 
-ENTRYPOINT ["./docker-entrypoint.sh"]
 RUN chmod 755 ./docker-entrypoint.sh
 
