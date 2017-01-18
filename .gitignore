@@ -19,7 +19,10 @@ nosetests.xml
 
 # tmp files
 .~*
+tmp/*
 
 logfile.log
 
 flask
+
+templates/cors_test.html

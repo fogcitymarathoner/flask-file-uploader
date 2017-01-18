@@ -27,7 +27,14 @@ else:
     print('Environment Variable FUP_PORT not set')
     quit(1)
 
+if os.environ.get('BRANCH'):
+    BRANCH = os.environ.get('BRANCH')
+else:
+    print('Environment Variable BRANCH not set')
+    quit(1)
+
 
 UPLOAD_FOLDER = 'data/'
 THUMBNAIL_FOLDER = 'data/thumbnail/'
 MAX_CONTENT_LENGTH = 50 * 1024 * 1024
+HEALTHCHECK_TEST_BUCKET = 'akiajaxy4lmfnr2gtlea-test-bucket'

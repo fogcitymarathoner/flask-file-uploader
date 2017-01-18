@@ -5,5 +5,7 @@ from config import FUP_PORT
 from config import UPLOAD_FOLDER
 from config import THUMBNAIL_FOLDER
 from config import MAX_CONTENT_LENGTH
+from config import HEALTHCHECK_TEST_BUCKET
+from config import BRANCH
 
 TEST=False
