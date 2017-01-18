@@ -21,10 +21,16 @@ def generate_simple_policy(expiry_seconds, bucket, branch):
     returns policy in json string
     """
     expiration = (dt.now() + td(seconds=expiry_seconds)).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    if branch != 'master':
+        starts_with = 'upload-%s' % branch
+    else:
+        starts_with = 'upload'
+
     policy = {"expiration": expiration,
               "conditions": [
                   {"bucket": bucket},
-                  ["starts-with", "$key", 'upload-%s' % branch],
+                  ["starts-with", "$key", starts_with],
                   {"acl": "private"},
                   {"success_action_status": '201'},
               ],
