@@ -1,23 +1,18 @@
 #!/usr/local/bin/python
-'''
+"""
 # Author: Ngo Duy Khanh
 # Email: ngokhanhit@gmail.com
 # Git repository: https://github.com/ngoduykhanh/flask-file-uploader
 # This work based on jQuery-File-Upload which can be found at
 # https://github.com/blueimp/jQuery-File-Upload/
-'''
+"""
 import os
-import json
-import base64
-import hmac
-import hashlib
 from PIL import Image
 import PIL
 import simplejson
 import traceback
 import boto
 from boto.exception import S3ResponseError
-from botocore.client import ClientError
 from flask import Flask
 from flask import request
 from flask import render_template
@@ -75,11 +70,11 @@ bootstrap = Bootstrap(app)
 
 
 def allowed_file(filename):
-    '''
+    """
     check to see if file extenstion is allowed
-    '''
+    """
     return '.' in filename and \
-        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 def gen_file_name(filename):
@@ -97,14 +92,14 @@ def gen_file_name(filename):
 
 
 def create_thumbnai(image):
-    '''
+    """
     make thumbnail of incoming pic
-    '''
+    """
     try:
         basewidth = 80
         img = Image.open(os.path.join(app.config['UPLOAD_FOLDER'], image))
-        wpercent = (basewidth/float(img.size[0]))
-        hsize = int((float(img.size[1])*float(wpercent)))
+        wpercent = (basewidth / float(img.size[0]))
+        hsize = int((float(img.size[1]) * float(wpercent)))
         img = img.resize((basewidth, hsize), PIL.Image.ANTIALIAS)
         img.save(os.path.join(app.config['THUMBNAIL_FOLDER'], image))
 
@@ -116,18 +111,17 @@ def create_thumbnai(image):
 
 @app.route("/upload", methods=['GET', 'POST'])
 def upload():
-    '''
+    """
     perform the download locally
-    '''
+    """
     if request.method == 'POST':
         file = request.files['file']
-        #pprint (vars(objectvalue))
+        # pprint (vars(objectvalue))
 
         if file:
             filename = secure_filename(file.filename)
             filename = gen_file_name(filename)
             mimetype = file.content_type
-
 
             if not allowed_file(file.filename):
                 result = uploadfile(
@@ -152,9 +146,9 @@ def upload():
         # get all file in ./data directory
         files = [
             f for f in os.listdir(
-                app.config['UPLOAD_FOLDER']) \
-                    if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f)) and \
-                        f not in IGNORED_FILES]
+                app.config['UPLOAD_FOLDER'])
+            if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f)) and
+            f not in IGNORED_FILES]
         file_display = []
 
         for f in files:
@@ -169,9 +163,9 @@ def upload():
 
 @app.route("/delete/<string:filename>", methods=['DELETE'])
 def delete(filename):
-    '''
+    """
     removed file locally
-    '''
+    """
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file_thumb_path = os.path.join(app.config['THUMBNAIL_FOLDER'], filename)
 
@@ -189,39 +183,45 @@ def delete(filename):
 # serve static files
 @app.route("/thumbnail/<string:filename>", methods=['GET'])
 def get_thumbnail(filename):
-    '''
+    """
     deliver thumbnail
-    '''
+    """
     return send_from_directory(app.config['THUMBNAIL_FOLDER'], filename=filename)
 
 
 @app.route("/data/<string:filename>", methods=['GET'])
 def get_file(filename):
-    '''
+    """
     deliver file name
-    '''
+    """
     return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER']), filename=filename)
+
 
 @app.route('/api/v1/cors-credentials', methods=['GET'])
 def s2_cors_credentials():
-    '''
+    """
     s3_cors_credentials
-    '''
+    """
     # 10 minute expiration
-    signer = PolicySigner( \
-                 600, app.config['AWS_BUCKET'], app.config['BRANCH'], \
-                 app.config['AWS_ACCESS_KEY_ID'], app.config['AWS_SECRET_ACCESS_KEY'])
+    signer = PolicySigner(
+        600, app.config['AWS_BUCKET'], app.config['BRANCH'],
+        app.config['AWS_ACCESS_KEY_ID'], app.config['AWS_SECRET_ACCESS_KEY'])
     return signer.to_json()
 
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    '''
+    """
     home page
-    '''
+    """
     return render_template('index.html')
 
 
 if __name__ == '__main__':
     print('Servicing S3 Bucket %s Branch %s' % (app.config['AWS_BUCKET'], app.config['BRANCH']))
+    if app.config['BRANCH'] != 'master':
+        upload_folder = 'upload-%s' % app.config['BRANCH']
+    else:
+        upload_folder = 'upload'
+    print('Uploading to S3 Folder %s' % upload_folder)
     app.run(debug=True, host='0.0.0.0', port=int(app.config['FUP_PORT']))
