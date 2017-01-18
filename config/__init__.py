@@ -35,7 +35,7 @@ else:
 
 
 if os.environ.get('HEALTHCHECK_TEST_BUCKET'):
-    BRANCH = os.environ.get('HEALTHCHECK_TEST_BUCKET')
+    HEALTHCHECK_TEST_BUCKET = os.environ.get('HEALTHCHECK_TEST_BUCKET')
 else:
     print('Environment Variable HEALTHCHECK_TEST_BUCKET not set')
     quit(1)
@@ -44,4 +44,3 @@ else:
 UPLOAD_FOLDER = 'data/'
 THUMBNAIL_FOLDER = 'data/thumbnail/'
 MAX_CONTENT_LENGTH = 50 * 1024 * 1024
-HEALTHCHECK_TEST_BUCKET = 'akiajaxy4lmfnr2gtlea-test-bucket'
