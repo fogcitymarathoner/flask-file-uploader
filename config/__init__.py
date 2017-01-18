@@ -34,6 +34,13 @@ else:
     quit(1)
 
 
+if os.environ.get('HEALTHCHECK_TEST_BUCKET'):
+    BRANCH = os.environ.get('HEALTHCHECK_TEST_BUCKET')
+else:
+    print('Environment Variable HEALTHCHECK_TEST_BUCKET not set')
+    quit(1)
+
+
 UPLOAD_FOLDER = 'data/'
 THUMBNAIL_FOLDER = 'data/thumbnail/'
 MAX_CONTENT_LENGTH = 50 * 1024 * 1024
