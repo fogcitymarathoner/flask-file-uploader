@@ -222,7 +222,23 @@ def s3_cors_credentials():
     return signer.to_json()
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/about', methods=['GET'])
+def about():
+    """
+    static about page
+    """
+    return render_template('about.html')
+
+
+@app.route('/list', methods=['GET'])
+def list():
+    """
+    file management page
+    """
+    return render_template('list.html')
+
+
+@app.route('/', methods=['GET'])
 def index():
     """
     home page
