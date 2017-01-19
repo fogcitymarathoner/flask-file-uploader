@@ -26,7 +26,14 @@
     }
 }(function ($) {
     'use strict';
-
+    // Advice for S3 post gotten from backend API endpoint
+    var AWSAccessKeyId = '';
+    var acl = '';
+    var policy = '';
+    var signature = '';
+    var key = '';
+    var success_action_status = 201;
+    var cors_credential_url =  "/api/v1/cors-credentials";
     // Detect file input support, based on
     // http://viljamis.com/blog/2012/file-upload-support-on-mobile/
     $.support.fileInput = !(new RegExp(
@@ -462,6 +469,25 @@
                             formData.append(field.name, field.value);
                         });
                     }
+                    // get temporary credentials for S3 POST
+                    $.ajax({
+                      type: "GET",
+                      url: cors_credential_url,
+                      success: function (data) {
+                        AWSAccessKeyId =  data['aws_key'];
+                        acl = 'private';
+                        policy = data['policy'];
+                        signature = data['signature'];
+                        key = data['key'];
+                      }, 
+                      async: false // <- this turns it into synchronous
+                    });
+                    formData.append('acl', 'private');
+                    formData.append('success_action_status', 201);
+                    formData.append('AWSAccessKeyId', AWSAccessKeyId);
+                    formData.append('key', key);
+                    formData.append('policy', policy);
+                    formData.append('signature', signature);
                     if (options.blob) {
                         formData.append(paramName, options.blob, file.name);
                     } else {
@@ -712,7 +738,11 @@
                 return true;
             }
             if (ub >= fs) {
+                console.log(options.i18n('uploadedBytes'));
                 file.error = options.i18n('uploadedBytes');
+// deal with XML return from S3
+console.log('return data from s3');
+console.log(file.error);
                 return this._getXHRPromise(
                     false,
                     options.context,

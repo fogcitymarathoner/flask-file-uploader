@@ -217,8 +217,19 @@
                     data.context.each(function (index) {
                         if (data.errorThrown !== 'abort') {
                             var file = data.files[index];
-                            file.error = file.error || data.errorThrown ||
-                                data.i18n('unknownError');
+                            var $location;
+                            var xml = data.jqXHR.responseText,
+                              xmlDoc = $.parseXML( xml ),
+                              $xml = $( xmlDoc ),
+                              $location = $xml.find( "Location" );
+
+                            # ERROR HANDLING HERE
+                            file.location = $location.text();
+                            if  (Number(data.jqXHR.status) >= 300)  {
+                                file.error = 'something went wrong' + data.jqXHR.responseText;
+                            //                            file.error = file.error || data.errorThrown ||
+                            //                               data.i18n('unknownError');
+                            }
                             deferred = that._addFinishedDeferreds();
                             that._transition($(this)).done(
                                 function () {

@@ -133,6 +133,9 @@
                     <span>{%=file.name%}</span>
                 {% } %}
             </p>
+            {% if (file.location) { %}
+                <div><span class="label label-success">Success</span>  <a href="{%=file.location %}">{%=file.location %}</a></div>
+            {% } %}
             {% if (file.error) { %}
                 <div><span class="label label-danger">Error</span> {%=file.error%}</div>
             {% } %}

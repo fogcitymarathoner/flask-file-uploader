@@ -51,7 +51,7 @@ class PolicySigner(object):
             'signature': signature,
             'aws_key': aws_key,
             'bucket': bucket,
-            'key': 'upload-cors/${filename}',
+            'key': 'upload-%s/${filename}' % branch,
         }
 
     def to_table(self):
