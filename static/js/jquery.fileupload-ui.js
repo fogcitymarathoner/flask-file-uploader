@@ -222,8 +222,16 @@
                               xmlDoc = $.parseXML( xml ),
                               $xml = $( xmlDoc ),
                               $location = $xml.find( "Location" );
-
-                            # ERROR HANDLING HERE
+                              // MAKE s3 upload public
+                              var $slow = $location.text().split('.com/');
+                              var $skey = unescape($slow[1]).split('/');
+                              // use endpoint to make key publicly accessible
+                              var idata = {"key": $skey[1] + '/' +$skey[2]};
+                              $.post( "/api/v1/make-s3-key-public", idata, function( data ) {
+                                // fixme: do some more meaningful here
+                                console.log( data );
+                              });
+                            // ERROR HANDLING HERE
                             file.location = $location.text();
                             if  (Number(data.jqXHR.status) >= 300)  {
                                 file.error = 'something went wrong' + data.jqXHR.responseText;

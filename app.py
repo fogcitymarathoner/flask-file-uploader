@@ -197,10 +197,23 @@ def get_file(filename):
     return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER']), filename=filename)
 
 
-@app.route('/api/v1/cors-credentials', methods=['GET'])
-def s2_cors_credentials():
+@app.route('/api/v1/make-s3-key-public', methods=['POST'])
+def make_s3_key_public():
     """
-    s3_cors_credentials
+    makes access url returned after upload public
+    """
+    key = request.form['key']
+    s3key = bucket.lookup(key)
+    if s3key:
+        print 'Making %s publicly accessible' % s3key
+        s3key.set_acl('public-read')
+    return '{}'
+
+
+@app.route('/api/v1/cors-credentials', methods=['GET'])
+def s3_cors_credentials():
+    """
+    s3_cors_credentials - returns credentials that allow browser to post directly to S3
     """
     # 10 minute expiration
     signer = PolicySigner(
