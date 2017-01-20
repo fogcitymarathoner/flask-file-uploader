@@ -18,7 +18,6 @@ $(function () {
         // Uncomment the following to send cross-domain cookies:
         //xhrFields: {withCredentials: true},
         url: '//s3.amazonaws.com/terraverde-fup',
-        xxx: 'asdfasdfasdf',
     });
 
     // Enable iframe cross-domain access via redirect option:
