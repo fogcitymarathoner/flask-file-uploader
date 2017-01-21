@@ -7,6 +7,8 @@
 # https://github.com/blueimp/jQuery-File-Upload/
 """
 import os
+import re
+import json
 import boto
 from boto.exception import S3ResponseError
 from flask import Flask
@@ -93,7 +95,7 @@ def about():
     signer = PolicySigner(
         600, app.config['AWS_BUCKET'], app.config['BRANCH'],
         app.config['AWS_ACCESS_KEY_ID'], app.config['AWS_SECRET_ACCESS_KEY'])
-    return render_template('about.html', about=signer.to_json())
+    return render_template('about.html', about=signer)
 
 
 @app.route('/api/v1/list', methods=['GET'])
@@ -101,7 +103,16 @@ def list():
     """
     file management page
     """
-    return '{}'
+    flist = []
+    for key in bucket.list():
+        if key.name.encode('utf-8').split('/')[1] != '' and re.match(starts_with_branch(app.config['BRANCH']), key.name.encode('utf-8') ):
+            flist.append(key.name.encode('utf-8'))
+    payload = {
+        "bucket": app.config['AWS_BUCKET'],
+        "folder": starts_with_branch(app.config['BRANCH']),
+        "files": flist,
+    }
+    return json.dumps(payload)
 
 
 @app.route('/', methods=['GET'])
