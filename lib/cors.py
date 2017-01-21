@@ -14,6 +14,20 @@ from flask import jsonify
 from tabulate import tabulate
 
 
+def starts_with_branch(branch):
+    """
+    calculates picky starts-with key for policy
+    different for each branch
+    :return:
+    """
+    if branch != 'master':
+        starts_with = 'upload-%s' % branch
+    else:
+        starts_with = 'upload'
+
+    return starts_with
+
+
 def generate_simple_policy(expiry_seconds, bucket, branch):
     """
     timestamp_policy - return json string policy for encoding
@@ -22,12 +36,10 @@ def generate_simple_policy(expiry_seconds, bucket, branch):
     """
     expiration = (dt.now() + td(seconds=expiry_seconds)).strftime('%Y-%m-%dT%H:%M:%SZ')
 
- 
-
     policy = {"expiration": expiration,
               "conditions": [
                   {"bucket": bucket},
-                  ["starts-with", "$key", starts_with],
+                  ["starts-with", "$key", starts_with_branch(branch)],
                   {"acl": "private"},
                   {"success_action_status": '201'},
               ],
@@ -48,7 +60,7 @@ class PolicySigner(object):
             'signature': signature,
             'aws_key': aws_key,
             'bucket': bucket,
-            'key': 'upload-%s/${filename}' % branch,
+            'key': '%s/${filename}' % starts_with_branch(branch),
         }
 
     def to_table(self):
