@@ -22,10 +22,7 @@ def generate_simple_policy(expiry_seconds, bucket, branch):
     """
     expiration = (dt.now() + td(seconds=expiry_seconds)).strftime('%Y-%m-%dT%H:%M:%SZ')
 
-    if branch != 'master':
-        starts_with = 'upload-%s' % branch
-    else:
-        starts_with = 'upload'
+ 
 
     policy = {"expiration": expiration,
               "conditions": [
@@ -51,7 +48,7 @@ class PolicySigner(object):
             'signature': signature,
             'aws_key': aws_key,
             'bucket': bucket,
-            'key': 'upload-cors/${filename}',
+            'key': 'upload-%s/${filename}' % branch,
         }
 
     def to_table(self):
