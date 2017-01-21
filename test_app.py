@@ -21,6 +21,8 @@ class FlaskTestCase(unittest.TestCase):
         assert 'UPLOAD_FOLDER' in app.config.keys()
         assert 'THUMBNAIL_FOLDER' in app.config.keys()
         assert 'MAX_CONTENT_LENGTH' in app.config.keys()
+        assert 'HEALTHCHECK_TEST_BUCKET' in app.config.keys()
+        assert 'BRANCH' in app.config.keys()
 
 if __name__ == '__main__':
     unittest.main()

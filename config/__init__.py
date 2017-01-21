@@ -27,6 +27,19 @@ else:
     print('Environment Variable FUP_PORT not set')
     quit(1)
 
+if os.environ.get('BRANCH'):
+    BRANCH = os.environ.get('BRANCH')
+else:
+    print('Environment Variable BRANCH not set')
+    quit(1)
+
+
+if os.environ.get('HEALTHCHECK_TEST_BUCKET'):
+    HEALTHCHECK_TEST_BUCKET = os.environ.get('HEALTHCHECK_TEST_BUCKET')
+else:
+    print('Environment Variable HEALTHCHECK_TEST_BUCKET not set')
+    quit(1)
+
 
 UPLOAD_FOLDER = 'data/'
 THUMBNAIL_FOLDER = 'data/thumbnail/'
