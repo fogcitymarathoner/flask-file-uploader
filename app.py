@@ -10,10 +10,16 @@ import os
 import re
 import json
 import boto
+from datetime import timedelta
+from flask import make_response
+from flask import current_app
+from functools import update_wrapper
+
 from boto.exception import S3ResponseError
 from flask import Flask
 from flask import request
 from flask import render_template
+from flask import abort
 from flask.ext.bootstrap import Bootstrap
 from lib.cors import PolicySigner
 from lib.cors import starts_with_branch
@@ -60,8 +66,50 @@ ALLOWED_EXTENSIONS = set(
 IGNORED_FILES = set(['.gitignore'])
 
 bootstrap = Bootstrap(app)
+def crossdomain(origin=None, methods=None, headers=None,
+                max_age=21600, attach_to_all=True,
+                automatic_options=True):
+    if methods is not None:
+        methods = ', '.join(sorted(x.upper() for x in methods))
+    if headers is not None and not isinstance(headers, basestring):
+        headers = ', '.join(x.upper() for x in headers)
+    if not isinstance(origin, basestring):
+        origin = ', '.join(origin)
+    if isinstance(max_age, timedelta):
+        max_age = max_age.total_seconds()
+
+    def get_methods():
+        if methods is not None:
+            return methods
+
+        options_resp = current_app.make_default_options_response()
+        return options_resp.headers['allow']
+
+    def decorator(f):
+        def wrapped_function(*args, **kwargs):
+            if automatic_options and request.method == 'OPTIONS':
+                resp = current_app.make_default_options_response()
+            else:
+                resp = make_response(f(*args, **kwargs))
+            if not attach_to_all and request.method != 'OPTIONS':
+                return resp
+
+            h = resp.headers
+
+            h['Access-Control-Allow-Origin'] = origin
+            h['Access-Control-Allow-Methods'] = get_methods()
+            h['Access-Control-Max-Age'] = str(max_age)
+            if headers is not None:
+                h['Access-Control-Allow-Headers'] = headers
+            return resp
+
+        f.provide_automatic_options = False
+        return update_wrapper(wrapped_function, f)
+    return decorator
+
 
 @app.route('/api/v1/make-s3-key-public', methods=['POST'])
+@crossdomain(origin='*')
 def make_s3_key_public():
     """
     makes access url returned after upload public
@@ -75,6 +123,7 @@ def make_s3_key_public():
 
 
 @app.route('/api/v1/cors-credentials', methods=['GET'])
+@crossdomain(origin='*')
 def s3_cors_credentials():
     """
     s3_cors_credentials - returns credentials that allow browser to post directly to S3
@@ -98,15 +147,39 @@ def about():
     return render_template('about.html', about=signer)
 
 
+@app.route('/api/v1/delete', methods=['OPTIONS', 'DELETE'])
+@crossdomain(origin='*')
+def delete():
+    """
+    Delete S3 key by boto
+    curl -X DELETE localhost:9194/api/v1/delete?file=upload-s3-test/Portfile
+    """
+    print request.args.get('file')
+    if request.args.get('file'):
+        found = False
+        for key in bucket.list():
+            if key.name.encode('utf-8').split('/')[1] != '' and request.args.get('file') == key.name.encode('utf-8'):
+                key.delete()
+                message = 'Deleting %s' % key.name.encode('utf-8')
+                print message
+                found = True
+        if not found:
+            abort(404)
+    else:
+        abort(404)
+
+    return '{"message": message}'
+
 @app.route('/api/v1/list', methods=['GET'])
+@crossdomain(origin='*')
 def list():
     """
-    file management page
+    file management page API end point
     """
     flist = []
     for key in bucket.list():
         if key.name.encode('utf-8').split('/')[1] != '' and re.match(starts_with_branch(app.config['BRANCH']), key.name.encode('utf-8') ):
-            flist.append(key.name.encode('utf-8'))
+            flist.append((key.name.encode('utf-8'), key.last_modified))
     payload = {
         "bucket": app.config['AWS_BUCKET'],
         "folder": starts_with_branch(app.config['BRANCH']),
