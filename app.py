@@ -1,8 +1,8 @@
 #!/usr/local/bin/python
 """
-# Author: Ngo Duy Khanh
-# Email: ngokhanhit@gmail.com
-# Git repository: https://github.com/ngoduykhanh/flask-file-uploader
+# Author: Marc Condon
+# Email: marc@fogtest.com
+# Git repository: https://github.com/fogcitymarathoner/flask-file-uploader
 # This work based on jQuery-File-Upload which can be found at
 # https://github.com/blueimp/jQuery-File-Upload/
 """
@@ -10,10 +10,6 @@ import os
 import re
 import json
 import boto
-from datetime import timedelta
-from flask import make_response
-from flask import current_app
-from functools import update_wrapper
 
 from boto.exception import S3ResponseError
 from flask import Flask
@@ -23,6 +19,7 @@ from flask import abort
 from flask.ext.bootstrap import Bootstrap
 from lib.cors import PolicySigner
 from lib.cors import starts_with_branch
+from lib.cors import crossdomain
 
 app = Flask(__name__, instance_relative_config=True)
 # Load the default configuration
@@ -56,56 +53,12 @@ except S3ResponseError:
 
 # test bucket
 bucket = s3.lookup(app.config['AWS_BUCKET'])
-print bucket
+
 if bucket is None:
     print "Creating Bucket %s" % app.config['AWS_BUCKET']
     s3.create_bucket(app.config['AWS_BUCKET'])
 
-ALLOWED_EXTENSIONS = set(
-    ['txt', 'gif', 'png', 'jpg', 'jpeg', 'bmp', 'rar', 'zip', '7zip', 'doc', 'docx'])
-IGNORED_FILES = set(['.gitignore'])
-
 bootstrap = Bootstrap(app)
-def crossdomain(origin=None, methods=None, headers=None,
-                max_age=21600, attach_to_all=True,
-                automatic_options=True):
-    if methods is not None:
-        methods = ', '.join(sorted(x.upper() for x in methods))
-    if headers is not None and not isinstance(headers, basestring):
-        headers = ', '.join(x.upper() for x in headers)
-    if not isinstance(origin, basestring):
-        origin = ', '.join(origin)
-    if isinstance(max_age, timedelta):
-        max_age = max_age.total_seconds()
-
-    def get_methods():
-        if methods is not None:
-            return methods
-
-        options_resp = current_app.make_default_options_response()
-        return options_resp.headers['allow']
-
-    def decorator(f):
-        def wrapped_function(*args, **kwargs):
-            if automatic_options and request.method == 'OPTIONS':
-                resp = current_app.make_default_options_response()
-            else:
-                resp = make_response(f(*args, **kwargs))
-            if not attach_to_all and request.method != 'OPTIONS':
-                return resp
-
-            h = resp.headers
-
-            h['Access-Control-Allow-Origin'] = origin
-            h['Access-Control-Allow-Methods'] = get_methods()
-            h['Access-Control-Max-Age'] = str(max_age)
-            if headers is not None:
-                h['Access-Control-Allow-Headers'] = headers
-            return resp
-
-        f.provide_automatic_options = False
-        return update_wrapper(wrapped_function, f)
-    return decorator
 
 
 @app.route('/api/v1/make-s3-key-public', methods=['POST'])
@@ -170,6 +123,7 @@ def delete():
 
     return '{"message": message}'
 
+
 @app.route('/api/v1/list', methods=['GET'])
 @crossdomain(origin='*')
 def list():
@@ -178,7 +132,8 @@ def list():
     """
     flist = []
     for key in bucket.list():
-        if key.name.encode('utf-8').split('/')[1] != '' and re.match(starts_with_branch(app.config['BRANCH']), key.name.encode('utf-8') ):
+        if key.name.encode('utf-8').split('/')[1] != '' and re.match(starts_with_branch(app.config['BRANCH']),
+                                                                     key.name.encode('utf-8')):
             flist.append((key.name.encode('utf-8'), key.last_modified))
     payload = {
         "bucket": app.config['AWS_BUCKET'],
