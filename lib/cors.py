@@ -3,7 +3,9 @@ CORS - Cross Origin Resource Sharing
 functions that generate matterials for S3 uploads
 base on browser upload to S3 - https://aws.amazon.com/articles/1434/
 """
+import os
 import json
+import re
 import base64
 import hmac
 import hashlib
@@ -71,3 +73,13 @@ class PolicySigner(object):
         return json dictionary so get request gets data filled because jsonify puts the right mime type on return
         """
         return jsonify(self.payload)
+
+def bucket_folder_stats(app, bucket):
+    flist = []
+    total_use = 0
+    for key in bucket.list():
+        if key.name.encode('utf-8').split('/')[1] != '' and re.match(starts_with_branch(app.config['BRANCH']), key.name.encode('utf-8') ):
+            filename, extension = os.path.splitext(key.name.encode('utf-8'))
+            total_use += key.size
+            flist.append((key.name.encode('utf-8'), key.last_modified, key.size, extension ))
+    return flist, total_use

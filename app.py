@@ -23,7 +23,7 @@ from flask import abort
 from flask.ext.bootstrap import Bootstrap
 from lib.cors import PolicySigner
 from lib.cors import starts_with_branch
-
+from lib.cors import bucket_folder_stats
 app = Flask(__name__, instance_relative_config=True)
 # Load the default configuration
 if os.environ.get('FUP_SETTINGS'):
@@ -144,7 +144,8 @@ def about():
     signer = PolicySigner(
         600, app.config['AWS_BUCKET'], app.config['BRANCH'],
         app.config['AWS_ACCESS_KEY_ID'], app.config['AWS_SECRET_ACCESS_KEY'])
-    return render_template('about.html', about=signer)
+    flist, total_use = bucket_folder_stats(app, bucket)
+    return render_template('about.html', about=signer, number_of_files=len(flist), total_use=total_use)
 
 
 @app.route('/api/v1/delete', methods=['OPTIONS', 'DELETE'])
@@ -176,13 +177,13 @@ def list():
     """
     file management page API end point
     """
-    flist = []
-    for key in bucket.list():
-        if key.name.encode('utf-8').split('/')[1] != '' and re.match(starts_with_branch(app.config['BRANCH']), key.name.encode('utf-8') ):
-            flist.append((key.name.encode('utf-8'), key.last_modified))
+
+    flist, total_use = bucket_folder_stats(app, bucket)
+
     payload = {
         "bucket": app.config['AWS_BUCKET'],
         "folder": starts_with_branch(app.config['BRANCH']),
+        "total_use": total_use,
         "files": flist,
     }
     return json.dumps(payload)
