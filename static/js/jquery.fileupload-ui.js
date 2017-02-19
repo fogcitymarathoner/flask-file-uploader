@@ -217,8 +217,27 @@
                     data.context.each(function (index) {
                         if (data.errorThrown !== 'abort') {
                             var file = data.files[index];
-                            file.error = file.error || data.errorThrown ||
-                                data.i18n('unknownError');
+                            var $location;
+                            var xml = data.jqXHR.responseText,
+                              xmlDoc = $.parseXML( xml ),
+                              $xml = $( xmlDoc ),
+                              $location = $xml.find( "Location" );
+                              // MAKE s3 upload public
+                              var $slow = $location.text().split('.com/');
+                              var $skey = unescape($slow[1]).split('/');
+                              // use endpoint to make key publicly accessible
+                              var idata = {"key": $skey[1] + '/' +$skey[2]};
+                              $.post( "/api/v1/make-s3-key-public", idata, function( data ) {
+                                // fixme: do some more meaningful here
+                                console.log( data );
+                              });
+                            // ERROR HANDLING HERE
+                            file.location = $location.text();
+                            if  (Number(data.jqXHR.status) >= 300)  {
+                                file.error = 'something went wrong' + data.jqXHR.responseText;
+                            //                            file.error = file.error || data.errorThrown ||
+                            //                               data.i18n('unknownError');
+                            }
                             deferred = that._addFinishedDeferreds();
                             that._transition($(this)).done(
                                 function () {

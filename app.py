@@ -1,29 +1,26 @@
 #!/usr/local/bin/python
 """
-# Author: Ngo Duy Khanh
-# Email: ngokhanhit@gmail.com
-# Git repository: https://github.com/ngoduykhanh/flask-file-uploader
+# Author: Marc Condon
+# Email: marc@fogtest.com
+# Git repository: https://github.com/fogcitymarathoner/flask-file-uploader
 # This work based on jQuery-File-Upload which can be found at
 # https://github.com/blueimp/jQuery-File-Upload/
 """
 import os
-from PIL import Image
-import PIL
-import simplejson
-import traceback
+import re
+import json
 import boto
+
 from boto.exception import S3ResponseError
 from flask import Flask
 from flask import request
 from flask import render_template
-from flask import redirect
-from flask import url_for
-from flask import send_from_directory
+from flask import abort
 from flask.ext.bootstrap import Bootstrap
-from werkzeug import secure_filename
-
-from lib.upload_file import uploadfile
 from lib.cors import PolicySigner
+from lib.cors import starts_with_branch
+from lib.cors import bucket_folder_stats
+from lib.cors import crossdomain
 
 app = Flask(__name__, instance_relative_config=True)
 # Load the default configuration
@@ -57,150 +54,33 @@ except S3ResponseError:
 
 # test bucket
 bucket = s3.lookup(app.config['AWS_BUCKET'])
-print bucket
+
 if bucket is None:
     print "Creating Bucket %s" % app.config['AWS_BUCKET']
     s3.create_bucket(app.config['AWS_BUCKET'])
 
-ALLOWED_EXTENSIONS = set(
-    ['txt', 'gif', 'png', 'jpg', 'jpeg', 'bmp', 'rar', 'zip', '7zip', 'doc', 'docx'])
-IGNORED_FILES = set(['.gitignore'])
-
 bootstrap = Bootstrap(app)
 
 
-def allowed_file(filename):
+@app.route('/api/v1/make-s3-key-public', methods=['POST'])
+@crossdomain(origin='*')
+def make_s3_key_public():
     """
-    check to see if file extenstion is allowed
+    makes access url returned after upload public
     """
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def gen_file_name(filename):
-    """
-    If file was exist already, rename it and return a new name
-    """
-
-    i = 1
-    while os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], filename)):
-        name, extension = os.path.splitext(filename)
-        filename = '%s_%s%s' % (name, str(i), extension)
-        i = i + 1
-
-    return filename
-
-
-def create_thumbnai(image):
-    """
-    make thumbnail of incoming pic
-    """
-    try:
-        basewidth = 80
-        img = Image.open(os.path.join(app.config['UPLOAD_FOLDER'], image))
-        wpercent = (basewidth / float(img.size[0]))
-        hsize = int((float(img.size[1]) * float(wpercent)))
-        img = img.resize((basewidth, hsize), PIL.Image.ANTIALIAS)
-        img.save(os.path.join(app.config['THUMBNAIL_FOLDER'], image))
-
-        return True
-    except:
-        print traceback.format_exc()
-        return False
-
-
-@app.route("/upload", methods=['GET', 'POST'])
-def upload():
-    """
-    perform the download locally
-    """
-    if request.method == 'POST':
-        file = request.files['file']
-        # pprint (vars(objectvalue))
-
-        if file:
-            filename = secure_filename(file.filename)
-            filename = gen_file_name(filename)
-            mimetype = file.content_type
-
-            if not allowed_file(file.filename):
-                result = uploadfile(
-                    name=filename, type=mimetype, size=0, not_allowed_msg="Filetype not allowed")
-
-            else:
-                # save file to disk
-                uploaded_file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(uploaded_file_path)
-
-                # create thumbnail after saving
-                if mimetype.startswith('image'):
-                    create_thumbnai(filename)
-                # get file size after saving
-                size = os.path.getsize(uploaded_file_path)
-
-                # return json for js call back
-                result = uploadfile(name=filename, type=mimetype, size=size)
-            return simplejson.dumps({"files": [result.get_file()]})
-
-    if request.method == 'GET':
-        # get all file in ./data directory
-        files = [
-            f for f in os.listdir(
-                app.config['UPLOAD_FOLDER'])
-            if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f)) and
-            f not in IGNORED_FILES]
-        file_display = []
-
-        for f in files:
-            size = os.path.getsize(os.path.join(app.config['UPLOAD_FOLDER'], f))
-            file_saved = uploadfile(name=f, size=size)
-            file_display.append(file_saved.get_file())
-
-        return simplejson.dumps({"files": file_display})
-
-    return redirect(url_for('index'))
-
-
-@app.route("/delete/<string:filename>", methods=['DELETE'])
-def delete(filename):
-    """
-    removed file locally
-    """
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file_thumb_path = os.path.join(app.config['THUMBNAIL_FOLDER'], filename)
-
-    if os.path.exists(file_path):
-        try:
-            os.remove(file_path)
-
-            if os.path.exists(file_thumb_path):
-                os.remove(file_thumb_path)
-            return simplejson.dumps({filename: 'True'})
-        except:
-            return simplejson.dumps({filename: 'False'})
-
-
-# serve static files
-@app.route("/thumbnail/<string:filename>", methods=['GET'])
-def get_thumbnail(filename):
-    """
-    deliver thumbnail
-    """
-    return send_from_directory(app.config['THUMBNAIL_FOLDER'], filename=filename)
-
-
-@app.route("/data/<string:filename>", methods=['GET'])
-def get_file(filename):
-    """
-    deliver file name
-    """
-    return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER']), filename=filename)
+    key = request.form['key']
+    s3key = bucket.lookup(key)
+    if s3key:
+        print 'Making %s publicly accessible' % s3key
+        s3key.set_acl('public-read')
+    return '{}'
 
 
 @app.route('/api/v1/cors-credentials', methods=['GET'])
-def s2_cors_credentials():
+@crossdomain(origin='*')
+def s3_cors_credentials():
     """
-    s3_cors_credentials
+    s3_cors_credentials - returns credentials that allow browser to post directly to S3
     """
     # 10 minute expiration
     signer = PolicySigner(
@@ -209,19 +89,69 @@ def s2_cors_credentials():
     return signer.to_json()
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/about', methods=['GET'])
+def about():
+    """
+    static about page
+    """
+    # 10 minute expiration
+    signer = PolicySigner(
+        600, app.config['AWS_BUCKET'], app.config['BRANCH'],
+        app.config['AWS_ACCESS_KEY_ID'], app.config['AWS_SECRET_ACCESS_KEY'])
+    flist, total_use = bucket_folder_stats(app, bucket)
+    return render_template('about.html', about=signer, number_of_files=len(flist), total_use=total_use)
+
+
+@app.route('/api/v1/delete', methods=['OPTIONS', 'DELETE'])
+@crossdomain(origin='*')
+def delete():
+    """
+    Delete S3 key by boto
+    curl -X DELETE localhost:9194/api/v1/delete?file=upload-s3-test/Portfile
+    """
+    print request.args.get('file')
+    if request.args.get('file'):
+        found = False
+        for key in bucket.list():
+            if key.name.encode('utf-8').split('/')[1] != '' and request.args.get('file') == key.name.encode('utf-8'):
+                key.delete()
+                message = 'Deleting %s' % key.name.encode('utf-8')
+                print message
+                found = True
+        if not found:
+            abort(404)
+    else:
+        abort(404)
+
+    return '{"message": message}'
+
+
+@app.route('/api/v1/list', methods=['GET'])
+@crossdomain(origin='*')
+def list():
+    """
+    file management page API end point
+    """
+
+    flist, total_use = bucket_folder_stats(app, bucket)
+    payload = {
+        "bucket": app.config['AWS_BUCKET'],
+        "folder": starts_with_branch(app.config['BRANCH']),
+        "total_use": total_use,
+        "files": flist,
+    }
+    return json.dumps(payload)
+
+
+@app.route('/', methods=['GET'])
 def index():
     """
-    home page
+    home page - with jquery downloader
     """
     return render_template('index.html')
 
 
 if __name__ == '__main__':
     print('Servicing S3 Bucket %s Branch %s' % (app.config['AWS_BUCKET'], app.config['BRANCH']))
-    if app.config['BRANCH'] != 'master':
-        upload_folder = 'upload-%s' % app.config['BRANCH']
-    else:
-        upload_folder = 'upload'
-    print('Uploading to S3 Folder %s' % upload_folder)
+    print('Uploading to S3 Folder %s' % starts_with_branch(app.config['BRANCH']))
     app.run(debug=True, host='0.0.0.0', port=int(app.config['FUP_PORT']))
